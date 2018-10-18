@@ -5,11 +5,6 @@
 #!
 #!#############################################################################
 
-#! A FAIRE:
-#! find.threshold: problème de format matrice quand il y a une seule variable
-#! Ajouter possibilité de lags différents pour les variables
-#! Ajouter possibilité de poids alpha différents pour les différentes variables
-
 #! Overmortality from mortality baseline
 
 baseline <- function(y, dates, nyear = Inf, side = 1, smoothing.fun = c("ma", "none", "spline"), ...)
@@ -127,24 +122,61 @@ episodes <- function(y, u, type = c("absolute","quantile"), trend = NULL, l = 0,
 }
 
 #! Finding threshold
-find.threshold <- function(indicators, episodes, u.grid, alphas = seq(0,1,.1), trim = NULL)
+find.threshold <- function(indicators, episodes, u.grid, fixed.alphas = NULL, alpha.step = .1, decreasing.alphas = TRUE, same.alphas = TRUE, order.result = c("None", "Detected", "Missed", "Sensitivity", "False_alarms", "Specificity", "Episodes_found"), order.decreasing = T)
 # indicators: an array of indicators
 # episodes: episodes to obtain (matrix with ind, episode and value)
 # u.grid: list of threshold grids to tests for each indicator in x
-# alphas: sequence of alphas to test (with the constraint that it sums to one) 
+# alphas: list of sequence of alphas to test (with the constraint that it sums to one) 
 {
-  if (length(dim(indicators)) == 2) dim(indicators) <- c(dim(indicators),1) 
-  alpha.grid <- expand.grid(rep(list(alphas),dim(indicators)[2]))
-  cond1 <- apply(alpha.grid,1,sum) == 1
-  cond2 <- apply(alpha.grid,1,function(x) all(diff(as.numeric(x)) <= 0))
-  alpha.grid <- alpha.grid[cond1 & cond2,] 
-  na <- nrow(alpha.grid)   
+  order.result <- match.arg(order.result)
+  if (!is.list(indicators)) indicators <- list(indicators)
+  indicators <- lapply(indicators, as.matrix)
+  p <- length(indicators)
+  pvec <- sapply(indicators, ncol)
+  inames <- names(indicators)
+  nvec <- sapply(indicators, nrow)
+  if (length(unique(nvec)) > 1) stop("All indicator matrices must have the same row number")
+  n <- unique(nvec)
+  if (is.null(inames)) inames <- 1:p
+  if (!is.list(u.grid)) u.grid <- list(u.grid)
+  u.grid <- rep_len(u.grid, p)
+  if (!is.list(fixed.alphas)) fixed.alphas <- list(fixed.alphas)
+  fixed.alphas <- rep_len(fixed.alphas, p)
+  for (i in 1:p){ # Check that alphas sums are == 1 and that the number of alphas are correct
+    al <- fixed.alphas[[i]]
+    if (!is.null(al)){
+      if ((sum(al) - 1) > .Machine$double.eps) stop("Weigthings in fixed.alphas must sum to one")
+      if (length(al) != pvec[i]) stop("Number of weights must be identical to the number of columns of the corresponding indicator")
+    }      
+  } 
+  # Grid of alphas to test if necessary
+  alpha.grid <- fixed.alphas
+  nulls <- sapply(fixed.alphas,is.null)
+  if (any(nulls)){
+    for (i in which(nulls)){
+      ag <- expand.grid(rep(list(seq(0,1,alpha.step)), pvec[i]))
+      ag <- ag[apply(ag, 1, sum) == 1,]
+      if (decreasing.alphas) ag <- ag[apply(ag, 1, function(x) all(diff(as.numeric(x))<=0)),]
+      alpha.grid[[i]] <- ag
+    }
+    na <- sapply(alpha.grid[nulls], nrow)
+    if (!same.alphas || (length(unique(pvec[nulls])) > 1)) {
+      igrid <- expand.grid(lapply(na[nulls], function(x) 1:x))
+      for (i in 1:sum(nulls)){
+        alpha.grid[[i]] <- alpha.grid[[which(nulls)[i]]][igrid[,i],]
+      }
+      na <- sapply(alpha.grid[nulls], nrow)
+    }
+    alpha.grid[which(!nulls)] <- lapply(alpha.grid[which(!nulls)], function(x) matrix(x, max(na), length(x)))
+  }
+  na <- max(na)
   total.ugrid <- expand.grid(u.grid)
   nu <- nrow(total.ugrid)
-  result <- as.data.frame(matrix(NA, nrow =na*nu, ncol = sum(dim(indicators)[2:3])+6, dimnames = list(NULL, c(paste("alpha",1:dim(indicators)[2]-1, sep=""), dimnames(indicators)[[3]], "Detected", "Missed", "Sensitivity", "False_alarms", "Specificity", "Episodes_found"))))
+  result <- as.data.frame(matrix(NA, nrow = na * nu, ncol = sum(pvec) + p + 6, dimnames = list(NULL, c(unlist(mapply(function(x,y) sprintf("%s_alpha%i", x, 1:y), inames, pvec)), sprintf("s_%s", inames), "Detected", "Missed", "Sensitivity", "False_alarms", "Specificity", "Episodes_found"))))
   pb <- txtProgressBar(min = 0, max = na*nu, style = 3)
   for (i in 1:na){
-    indi <- apply(indicators,3,function(x) x %*% as.numeric(alpha.grid[i,]))
+    indi <- matrix(NA, n, p)
+    for (k in 1:p) indi[,k] <- indicators[[k]] %*% unlist(alpha.grid[[k]][i,])
     for (j in 1:nu){
       cond <- paste(sprintf("indi[,%1$i] > total.ugrid[j,%1$i]",1:ncol(total.ugrid)),collapse = " & ")
       found <- eval(parse(text=cond))
@@ -155,14 +187,16 @@ find.threshold <- function(indicators, episodes, u.grid, alphas = seq(0,1,.1), t
       sensitivity <- sum(true.positives) / (sum(true.positives) + sum(false.negatives))
       specificity <- sum(true.negative) / (sum(true.negative) + sum(false.positives))
       episodes.found <- unique(episodes[true.positives,2])
-      result[(i-1)*nu + j,] <- c(alpha.grid[i,],total.ugrid[j,], sum(true.positives), sum(false.negatives), sensitivity, sum(false.positives), specificity, length(episodes.found))
+      result[(i-1)*nu + j,] <- c(unlist(sapply(alpha.grid, "[", i, )),total.ugrid[j,], sum(true.positives), sum(false.negatives), sensitivity, sum(false.positives), specificity, length(episodes.found))
       setTxtProgressBar(pb, (i-1)*nu + j)
     }
   }
-  dominated <- sapply(1:(na*nu), function(i) any((result[-i,"Sensitivity"] > result[i,"Sensitivity"] & result[-i,"Specificity"] > result[i,"Specificity"])))
-  result <- result[!dominated,]
-  result <- result[order(result[,"Specificity"] + result["Episodes_found"]/max(episodes[,2]), decreasing = T),]
-  if (!is.null(trim)) result <- result[1:trim,]
   close(pb)
+  dominated <- sapply(1:(na*nu), function(i) any(((result[-i,"Sensitivity"] >= result[i,"Sensitivity"] & result[-i,"Specificity"] >= result[i,"Specificity"]) & (result[-i,"Sensitivity"] != result[i,"Sensitivity"] | result[-i,"Specificity"] != result[i,"Specificity"])))) #Removing of cases for which both specificity and sensitivity are lower than at least another case
+  result <- result[!dominated,]
+  if (order.result != "None"){
+     ord <- with(result, order(get(order.result), decreasing = order.decreasing))
+     result <- result[ord,]
+  }
   return(result)
 }
