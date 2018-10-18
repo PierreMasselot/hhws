@@ -1,0 +1,12 @@
+Package: hhws
+Title: Functions for heat-health warning systems
+Version: 1.0
+Authors@R: c(
+	person("Pierre", "Masselot", email = "pierre.masselot@ete.inrs.ca", role = "cre"),
+	person("Fateh", "Chebana", email = "fateh.chebana@ete.inrs.ca", role = "aut"))
+Description: Functions for finding indicators and thresholds for an heat-health warning system. These functions can be used for systems similar to those currently implemented in France and in the province of Quebec, Canada. It allows computing an over-mortality series, significant over-mortality episodes and find optimal weights and thresholds for the predefined indicators. 
+Depends: R (>= 3.5.1)
+License: CC0
+Encoding: UTF-8
+LazyData: true
+Imports: forecast (>= 8.4)
