@@ -16,27 +16,29 @@ baseline <- function(y, dates, nyear = Inf, side = 1, smoothing.fun = c("ma", "n
 # ...: arguments for presmoothing fucntion
 { 
   n <- length(y)
+baseline <- function(x, dates, nyear = Inf, center = FALSE, smoothing.fun = c("ma", "spline", "none"), ...){
+  n <- length(x)
   if (missing(dates)) dates <- as.POSIXlt(1:n)
   if (is.character(dates)) dates <- as.POSIXlt(dates)
   stopifnot(length(dates) == n)
-  y <- y[order(dates)]
+  x <- x[order(dates)]
   dates <- dates[order(dates)]
   if ((n-1) != diff(range(dates))) {
     complete.seq <- seq(dates[1],dates[n],"day")
     orig.dates <- as.Date(complete.seq) %in% as.Date(dates)
     newy <- rep(NA,length(complete.seq))
-    newy[orig.dates] <- y
-    y <- newy
+    newy[orig.dates] <- x
+    x <- newy
     dates <- as.POSIXlt(complete.seq)
-    n <- length(y)
+    n <- length(x)
   } else {
     orig.dates <- rep(TRUE,n)
   }
   smoothing.fun <- match.arg(smoothing.fun)
   ysm <- switch(smoothing.fun,
-    none = y,
-    ma = forecast::ma(y, ...),
-    spline = smooth.spline(julian(dates, origin = dates[1]),y, ...)$y
+    none = x,
+    ma = forecast::ma(x, ...),
+    spline = smooth.spline(julian(dates, origin = dates[1]),x, ...)$y
   )
   if (nyear > diff(range(dates$year))){
     means <- aggregate(as.vector(ysm), by = list(doy = dates$yday), mean, na.rm=T)
@@ -45,13 +47,16 @@ baseline <- function(y, dates, nyear = Inf, side = 1, smoothing.fun = c("ma", "n
     ey <- ms[as.character(dates$yday)]
   } else {
     bydoy <- split(ysm, dates$yday)
-    means <- lapply(bydoy, function(x){
-      wei <- matrix(0,sum(!is.na(x)),sum(!is.na(x)))
-      wei[abs(col(wei) - row(wei)) < nyear] <- 1
-      if (side == 1) wei[(row(wei)-col(wei)) < 0] <- 0
+    means <- lapply(bydoy, function(doy){
+      wei <- matrix(0, sum(!is.na(doy)), sum(!is.na(doy)))
+      if (center){
+        wei[abs(col(wei) - row(wei)) < (nyear / 2)] <- 1
+      } else {
+        wei[(row(wei) - col(wei)) %in% (1:nyear - 1)] <- 1
+      }
       wei <- wei / rowSums(wei)
-      res <- rep(NA,length(x))
-      res[!is.na(x)] <- wei %*% na.omit(x)
+      res <- rep(NA,length(doy))
+      res[!is.na(doy)] <- wei %*% na.omit(doy)
       return(res)
     })
     ey <- vector("numeric",n)
