@@ -52,7 +52,7 @@ are returned.}
 \value{
 A data.frame containing a subset (unless \code{keep.all = TRUE})  
    of weightings and thresholds. Weightings correspond to the columns
-   with a name containing "alpha" and threshold to names beginning with "s_".
+   with a name containing "alpha" and threshold to names beginning with "threshold_".
    In addition, several scores are given in each line:
    \itemize{
      \item{Detected}{The number of indices in \code{episodes} detected by
@@ -123,5 +123,6 @@ Chebana F., Martel B., Gosselin P., Giroux J.X., Ouarda T.B.M.J., 2013.
      of biometeorology 50, 144-153.
 }
 \seealso{
-[episodes()] for extracting episodes of extreme values.
+[episodes()] for extracting episodes of extreme values and 
+   [predict_alarms()] for alarms prediction.
 }

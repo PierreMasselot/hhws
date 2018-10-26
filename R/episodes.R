@@ -23,8 +23,9 @@
 #' @param uc Numeric vector. Thresholds for covariates. Extremes of \code{x} are
 #'   return only if covariates are also above their given thresholds.
 #'
-#' @return A data.frame object containing the indices, values and 
-#'     episode number of all episodes found.
+#' @return A data.frame object containing the indices, values, 
+#'     episode number of all episodes found, and a logical indicating 
+#'     if the day is one of the extremes (useful when \code{l > 0}).
 #' 
 #'     In addition, contains the attribute
 #'     \code{threshold} which gives he threshold for each value of \code{x}.  
@@ -79,6 +80,7 @@ episodes <- function(x, u, type = c("absolute","quantile"), trend = NULL, l = 0,
     totcond <- apply(cond, 1, all)
     inds <- inds[totcond]
   }
+  ext.inds <- inds
   dist_exc <- abs(outer(1:n, inds, "-"))
   inds <- which(apply(dist_exc, 1, function(y) any(y <= l)))
   epis <- c(1, cumsum(diff(inds) > r) + 1)
@@ -87,7 +89,8 @@ episodes <- function(x, u, type = c("absolute","quantile"), trend = NULL, l = 0,
     exts <- exts - mean(x, na.rm=T) + trend[inds]
     u <- u - mean(x, na.rm=T) + trend
   }
-  result <- data.frame(t = inds, episode = epis, value = exts)
+  result <- data.frame(t = inds, episode = epis, value = exts, 
+    extreme = inds %in% ext.inds)
   attr(result, "threshold") <- rep_len(u, n)
   return(result) 
 }

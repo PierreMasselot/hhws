@@ -54,8 +54,8 @@
 #'
 #' @return A data.frame containing a subset (unless \code{keep.all = TRUE})  
 #'    of weightings and thresholds. Weightings correspond to the columns
-#'    with a name containing "alpha" and threshold to names beginning with "s_".
-#'    In addition, several scores are given in each line:
+#'    with a name containing "alpha" and threshold to names beginning with 
+#'    "threshold". In addition, several scores are given in each line:
 #'    \itemize{
 #'      \item{Detected}{The number of indices in \code{episodes} detected by
 #'        the combination.}
@@ -71,7 +71,8 @@
 #'        of entire episodes instead of only indices.}
 #'    }
 #'
-#' @seealso [episodes()] for extracting episodes of extreme values. 
+#' @seealso [episodes()] for extracting episodes of extreme values and 
+#'    [predict_alarms()] for alarms prediction.
 #'
 #' @references
 #'    Chebana F., Martel B., Gosselin P., Giroux J.X., Ouarda T.B.M.J., 2013. 
@@ -160,7 +161,8 @@ find.threshold <- function(indicators, episodes, u.grid, fixed.alphas = NULL,
   nu <- nrow(total.ugrid)
   result <- as.data.frame(matrix(NA, nrow = na * nu, ncol = sum(pvec) + p + 6, 
     dimnames = list(NULL, c(unlist(mapply(function(x,y) 
-      sprintf("%s_alpha%i", x, 1:y - 1), inames, pvec)), sprintf("s_%s", inames), 
+      sprintf("%s_alpha%i", x, 1:y - 1), inames, pvec)), 
+      sprintf("threshold_%s", inames), 
       "Detected", "Missed", "Sensitivity", "False_alarms", "Specificity",
       "Episodes_found"))))
   pb <- txtProgressBar(min = 0, max = na*nu, style = 3)
@@ -171,6 +173,8 @@ find.threshold <- function(indicators, episodes, u.grid, fixed.alphas = NULL,
       cond <- paste(sprintf("indi[,%1$i] > total.ugrid[j,%1$i]", 
         1:ncol(total.ugrid)),collapse = " & ")
       found <- eval(parse(text=cond))
+#      alarms <- extract_alarms(indicators, alpha = lapply(alpha.grid, "[", i, ), 
+#        s = total.ugrid[j,]) # slower
       true.positives <- episodes[,1] %in% which(found)
       false.positives <- !which(found) %in% episodes[,1]
       false.negatives <- !episodes[,1] %in% which(found)
@@ -200,5 +204,86 @@ find.threshold <- function(indicators, episodes, u.grid, fixed.alphas = NULL,
      ord <- order(result[,order.result], decreasing = order.decreasing)
      result <- result[ord,]
   }
+  return(result)
+}
+
+#' Predict alarms
+#'
+#' Given predefined weights and thresholds, predict which of the indicators
+#'    values are alarms.
+#'
+#' @param indicators List of matrices containing values of the lagged covariates
+#'    to test whether they are alarms. Can also be a matrix in the case of a
+#'    single indicator. 
+#' @param alpha List of vectors giving the weightings used to construct 
+#'    indicators. Must have the same length as \code{indicators} and each 
+#'    vector must have the same length as \code{ncol} of each matric in 
+#'    \code{indicators}.
+#' @param s Vector of thresholds. Must have the same length as 
+#'    \code{indicators}.
+#' @param y Optional vector of corresponding response value. Must have the same
+#'    length as the number of rows of each matrix in \code{indicators}.
+#' @param r Positive integer. Number of consecutive values below threshold  
+#'   following an alarm to end the episode.
+#'
+#' @details Extracts the indices in \code{indicators} that correspond to an
+#'    alarm according to the given weigths and thresholds. If \code{y} is
+#'    given, the corresponding values of the response \emph{e.g.}
+#'    over-mortality are also returned. In addition, episodes are formed
+#'    by consecutive alarms (or by alarms occurring with time differences)
+#'    lower or equal than \code{r}.
+#'
+#' @return A data.frame object containing the indices, values, 
+#'     and episode number of all alarms found.
+#'
+#' @references
+#'    Chebana F., Martel B., Gosselin P., Giroux J.X., Ouarda T.B.M.J., 2013. 
+#'      A general and flexible methodology to define thresholds for heat health 
+#'      watch and warning systems, applied to the province of Quebec (Canada). 
+#'      International journal of biometeorology 57, 631-644.
+#'
+#' @examples
+#'   data(chicagoNMMAPS)
+#'   x <- chicagoNMMAPS$death
+#'   dates <- as.POSIXlt(chicagoNMMAPS$date)
+#'   n <- nrow(chicagoNMMAPS)
+#'
+#'   # Compute over-mortality
+#'   om <- excess(x, dates = dates, order = 15)
+#'   
+#'   # Extract all days for which om is above 40%
+#'   epis <- episodes(om, u = 40)
+#'
+#'   # Prepare indicator based on temperature until lag 2
+#'   indic <- matrix(NA, nrow = n, ncol = 3)
+#'   indic[,1] <- chicagoNMMAPS$temp  # lag 0
+#'   indic[,2] <- c(NA, chicagoNMMAPS$temp[-n]) # Lag 1
+#'   indic[,3] <- c(NA, NA, chicagoNMMAPS$temp[1:(n-2)]) # lag 2
+#'   # Evaluate different threshold/indicators based on these episodes
+#'   tested <- find.threshold(indic, epis, u.grid = 20:35)
+#'
+#'   # Choose a result and predict
+#'   final <- tested[19,]
+#'   predict_alarms(indic, final[1:3], s = final[4], y = om)
+predict_alarms <- function(indicators, alpha, s, y = NA, r = 1)
+{
+  if (!is.list(indicators)){
+    nind <- deparse(substitute(indicators))
+    indicators <- list(indicators)
+    names(indicators) <- nind
+  }
+  indicators <- lapply(indicators, as.matrix)
+  nvec <- sapply(indicators, nrow)
+  n <- unique(nvec)
+  stopifnot(length(n) == 1)
+  if (!is.list(alpha) || is.data.frame(alpha)) alpha <- list(alpha)
+  alpha <- lapply(alpha, unlist)
+  stopifnot(length(unique(length(indicators), length(alpha), length(s))) == 1)
+  indics <- mapply("%*%", indicators, alpha, SIMPLIFY = FALSE)
+  inds.indiv <- mapply(">", indics, s)
+  inds <- which(apply(as.matrix(inds.indiv), 1, all))
+  epis <- c(1, cumsum(diff(inds) > r) + 1)
+  y <- rep_len(y, n)
+  result <- data.frame(t = inds, episode = epis, value = y[inds])
   return(result)
 }

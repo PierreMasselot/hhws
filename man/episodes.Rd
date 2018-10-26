@@ -36,8 +36,9 @@ the extracted episodes.}
 return only if covariates are also above their given thresholds.}
 }
 \value{
-A data.frame object containing the indices, values and 
-    episode number of all episodes found.
+A data.frame object containing the indices, values, 
+    episode number of all episodes found, and a logical indicating 
+    if the day is one of the extremes (useful when \code{l > 0}).
 
     In addition, contains the attribute
     \code{threshold} which gives he threshold for each value of \code{x}.  
