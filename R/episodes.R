@@ -28,8 +28,9 @@
 #'     if the day is one of the extremes (useful when \code{l > 0}).
 #' 
 #'     In addition, contains the attribute
-#'     \code{threshold} which gives he threshold for each value of \code{x}.  
-#'     Useful for plotting.
+#'     \code{threshold} which gives he threshold for each value of \code{x}  
+#'     for plotting, as well as \code{r}, \code{l} and \code{uc} that contains 
+#'     values of the corresponding parameters used to extract episodes.
 #'
 #' @references
 #'    Chebana F., Martel B., Gosselin P., Giroux J.X., Ouarda T.B.M.J., 2013. 
@@ -92,5 +93,9 @@ episodes <- function(x, u, type = c("absolute","quantile"), trend = NULL, l = 0,
   result <- data.frame(t = inds, episode = epis, value = exts, 
     extreme = inds %in% ext.inds)
   attr(result, "threshold") <- rep_len(u, n)
+  attr(result, "r") <- r
+  attr(result, "l") <- l
+  if (is.null(names(uc))) names(uc) <- colnames(covariates)
+  attr(result, "uc") <- uc
   return(result) 
 }

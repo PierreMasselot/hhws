@@ -24,8 +24,8 @@
 #'    identical for each indicator. Note that trying different weightings
 #'    (\code{same.alpha = FALSE}) can lead to significantly longer
 #'    computation time.
-#' @param order.result Character of numeric value indicating a column used
-#'    to order the returned table.
+#' @param order.result Character or numeric value indicating a column used
+#'    to order the returned table. Can also be a vector.
 #' @param order.decreasing Logical. If TRUE (the default), ordering of the
 #'    table is made by decreasing order to the column specified by
 #'    \code{order.result}.
@@ -33,6 +33,9 @@
 #'    both lower specificity and sensitivity than at least another combination
 #'    are discarded from the results. Otherwise, all tested combinations
 #'    are returned.
+#' @param r Positive integer. Number of consecutive values below threshold  
+#'   following an excess to end the episode. By default, take the attribute
+#'   \code{r} in \code{episodes} or 1 if absent.
 #'
 #' @details We consider a warning system as a couple indicator/threshold
 #'    used to launch alerts when forecasts of the indicator exceed the
@@ -69,6 +72,8 @@
 #'        False_alarms / n.}
 #'      \item{Episodes_found}{The number of episodes found, which takes account
 #'        of entire episodes instead of only indices.}
+#'      \item{False_episodes}{The number of false episodes found, i.e. absent
+#'        from the provides \code{episodes}.}
 #'    }
 #'
 #' @seealso [episodes()] for extracting episodes of extreme values and 
@@ -105,12 +110,15 @@
 #'    find.threshold(indic, epis, u.grid = 20:35)
 find.threshold <- function(indicators, episodes, u.grid, fixed.alphas = NULL, 
   alpha.step = .1, decreasing.alphas = TRUE, same.alphas = TRUE, 
-  order.result = NULL, order.decreasing = TRUE, keep.all = FALSE) 
+  order.result = NULL, order.decreasing = TRUE, keep.all = FALSE, r = NULL) 
 {
   if (!is.list(indicators)){
     nind <- deparse(substitute(indicators))
     indicators <- list(indicators)
     names(indicators) <- nind
+  }
+  if (is.null(r)){
+    r <- ifelse(is.null(attr(episodes, "r")), 1, attr(episodes, "r"))
   } 
   indicators <- lapply(indicators, as.matrix)
   p <- length(indicators)
@@ -159,12 +167,12 @@ find.threshold <- function(indicators, episodes, u.grid, fixed.alphas = NULL,
   na <- max(na)
   total.ugrid <- expand.grid(u.grid)
   nu <- nrow(total.ugrid)
-  result <- as.data.frame(matrix(NA, nrow = na * nu, ncol = sum(pvec) + p + 6, 
+  result <- as.data.frame(matrix(NA, nrow = na * nu, ncol = sum(pvec) + p + 7, 
     dimnames = list(NULL, c(unlist(mapply(function(x,y) 
       sprintf("%s_alpha%i", x, 1:y - 1), inames, pvec)), 
       sprintf("threshold_%s", inames), 
       "Detected", "Missed", "Sensitivity", "False_alarms", "Specificity",
-      "Episodes_found"))))
+      "Episodes_found", "False_episodes"))))
   pb <- txtProgressBar(min = 0, max = na*nu, style = 3)
   for (i in 1:na){
     indi <- matrix(NA, n, p)
@@ -173,36 +181,47 @@ find.threshold <- function(indicators, episodes, u.grid, fixed.alphas = NULL,
       cond <- paste(sprintf("indi[,%1$i] > total.ugrid[j,%1$i]", 
         1:ncol(total.ugrid)),collapse = " & ")
       found <- eval(parse(text=cond))
+      found.ind <- which(found)
 #      alarms <- extract_alarms(indicators, alpha = lapply(alpha.grid, "[", i, ), 
 #        s = total.ugrid[j,]) # slower
-      true.positives <- episodes[,1] %in% which(found)
-      false.positives <- !which(found) %in% episodes[,1]
-      false.negatives <- !episodes[,1] %in% which(found)
+      true.positives <- episodes[,1] %in% found.ind
+      false.positives <- !found.ind %in% episodes[,1]
+      false.negatives <- !episodes[,1] %in% found.ind
       true.negative <- !which(!found) %in% episodes[,1]
       sensitivity <- sum(true.positives) / (sum(true.positives) + 
         sum(false.negatives))
       specificity <- sum(true.negative) / (sum(true.negative) + 
         sum(false.positives))
       episodes.found <- unique(episodes[true.positives,2])
+      distToEpis <- abs(outer(found.ind, episodes[,1], "-"))
+      outEpisodes <- apply(distToEpis, 1, function(x) !any(x <= 3))
+      false.episodes <- c(1, cumsum(diff(found.ind[outEpisodes]) > r) + 1)
       result[(i-1)*nu + j,] <- c(unlist(sapply(alpha.grid, "[", i, )), 
         total.ugrid[j,], sum(true.positives), sum(false.negatives), sensitivity,
-        sum(false.positives), specificity, length(episodes.found))
+        sum(false.positives), specificity, length(episodes.found),
+        length(unique(false.episodes)))
       setTxtProgressBar(pb, (i-1)*nu + j)
     }
   }
   close(pb)
   if (!keep.all){
-    #Removing of cases for which both specificity and sensitivity are lower than at least another case
+    #Removing of cases for which both specificity and sensitivity are lower than at least another case    
     dominated <- sapply(1:(na*nu), function(i) any(((result[-i,"Sensitivity"] >= 
       result[i,"Sensitivity"] & result[-i,"Specificity"] >= 
       result[i,"Specificity"]) & (result[-i,"Sensitivity"] != 
       result[i,"Sensitivity"] | result[-i,"Specificity"] != 
       result[i,"Specificity"]))))
+    dominated <- sapply(1:(na*nu), function(i) any(((result[-i,"Episodes_found"] >= 
+      result[i,"Episodes_found"] & result[-i,"False_episodes"] <= 
+      result[i,"False_episodes"]) & (result[-i,"Episodes_found"] != 
+      result[i,"Episodes_found"] | result[-i,"False_episodes"] != 
+      result[i,"False_episodes"]))))
     result <- result[!dominated,]
   }
   if (!is.null(order.result)){
-     ord <- order(result[,order.result], decreasing = order.decreasing)
-     result <- result[ord,]
+    ord <- do.call(order, c(result[,order.result, drop = F], 
+      list(decreasing = order.decreasing)))
+    result <- result[ord,]
   }
   return(result)
 }
@@ -233,8 +252,8 @@ find.threshold <- function(indicators, episodes, u.grid, fixed.alphas = NULL,
 #'    by consecutive alarms (or by alarms occurring with time differences)
 #'    lower or equal than \code{r}.
 #'
-#' @return A data.frame object containing the indices, values, 
-#'     and episode number of all alarms found.
+#' @return A data.frame object containing the indices, episode number, and the 
+#'    values of both the response and indicators for all alarms found.
 #'
 #' @references
 #'    Chebana F., Martel B., Gosselin P., Giroux J.X., Ouarda T.B.M.J., 2013. 
@@ -284,6 +303,7 @@ predict_alarms <- function(indicators, alpha, s, y = NA, r = 1)
   inds <- which(apply(as.matrix(inds.indiv), 1, all))
   epis <- c(1, cumsum(diff(inds) > r) + 1)
   y <- rep_len(y, n)
-  result <- data.frame(t = inds, episode = epis, value = y[inds])
+  result <- data.frame(t = inds, episode = epis, value = y[inds], 
+    sapply(indics, "[", inds, ))
   return(result)
 }
