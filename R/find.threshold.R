@@ -90,6 +90,7 @@
 #'      of biometeorology 50, 144-153. 
 #'
 #' @examples
+#'    library(dlnm)
 #'    data(chicagoNMMAPS)
 #'    x <- chicagoNMMAPS$death
 #'    dates <- as.POSIXlt(chicagoNMMAPS$date)
@@ -108,6 +109,8 @@
 #'    indic[,3] <- c(NA, NA, chicagoNMMAPS$temp[1:(n-2)]) # lag 2
 #'    # Evaluate different threshold/indicators based on these episodes
 #'    find.threshold(indic, epis, u.grid = 20:35)
+#'
+#' @export
 find.threshold <- function(indicators, episodes, u.grid, fixed.alphas = NULL, 
   alpha.step = .1, decreasing.alphas = TRUE, same.alphas = TRUE, 
   order.result = NULL, order.decreasing = TRUE, keep.all = FALSE, r = NULL) 
@@ -174,6 +177,7 @@ find.threshold <- function(indicators, episodes, u.grid, fixed.alphas = NULL,
       "Detected", "Missed", "Sensitivity", "False_alarms", "Specificity",
       "Episodes_found", "False_episodes"))))
   pb <- txtProgressBar(min = 0, max = na*nu, style = 3)
+  count <- 0
   for (i in 1:na){
     indi <- matrix(NA, n, p)
     for (k in 1:p) indi[,k] <- indicators[[k]] %*% unlist(alpha.grid[[k]][i,])
@@ -196,28 +200,23 @@ find.threshold <- function(indicators, episodes, u.grid, fixed.alphas = NULL,
       distToEpis <- abs(outer(found.ind, episodes[,1], "-"))
       outEpisodes <- apply(distToEpis, 1, function(x) !any(x <= 3))
       false.episodes <- c(1, cumsum(diff(found.ind[outEpisodes]) > r) + 1)
-      result[(i-1)*nu + j,] <- c(unlist(sapply(alpha.grid, "[", i, )), 
-        total.ugrid[j,], sum(true.positives), sum(false.negatives), sensitivity,
-        sum(false.positives), specificity, length(episodes.found),
-        length(unique(false.episodes)))
+      #Removing of cases for which both specificity and sensitivity are lower than at least another case (if keep.all == FALSE)  
+      dominated <- any(((result[1:count, "Sensitivity"] >= sensitivity & 
+        result[1:count, "Specificity"] >= specificity) & 
+        (result[1:count,"Sensitivity"] != sensitivity | 
+        result[1:count,"Specificity"] != specificity)))
+      if (keep.all || !dominated || count == 0){
+        count <- count + 1
+        result[count,] <- c(unlist(sapply(alpha.grid, "[", i, )), 
+          total.ugrid[j,], sum(true.positives), sum(false.negatives), 
+          sensitivity, sum(false.positives), specificity, 
+          length(episodes.found), length(unique(false.episodes)))        
+      }      
       setTxtProgressBar(pb, (i-1)*nu + j)
     }
   }
   close(pb)
-  if (!keep.all){
-    #Removing of cases for which both specificity and sensitivity are lower than at least another case    
-    dominated <- sapply(1:(na*nu), function(i) any(((result[-i,"Sensitivity"] >= 
-      result[i,"Sensitivity"] & result[-i,"Specificity"] >= 
-      result[i,"Specificity"]) & (result[-i,"Sensitivity"] != 
-      result[i,"Sensitivity"] | result[-i,"Specificity"] != 
-      result[i,"Specificity"]))))
-    dominated <- sapply(1:(na*nu), function(i) any(((result[-i,"Episodes_found"] >= 
-      result[i,"Episodes_found"] & result[-i,"False_episodes"] <= 
-      result[i,"False_episodes"]) & (result[-i,"Episodes_found"] != 
-      result[i,"Episodes_found"] | result[-i,"False_episodes"] != 
-      result[i,"False_episodes"]))))
-    result <- result[!dominated,]
-  }
+  result <- result[1:count,]
   if (!is.null(order.result)){
     ord <- do.call(order, c(result[,order.result, drop = F], 
       list(decreasing = order.decreasing)))
@@ -255,6 +254,9 @@ find.threshold <- function(indicators, episodes, u.grid, fixed.alphas = NULL,
 #' @return A data.frame object containing the indices, episode number, and the 
 #'    values of both the response and indicators for all alarms found.
 #'
+#' @seealso \code{\link{predict_alarms}} to extract the detected alarms given
+#'    indicators and thresholds.
+#'
 #' @references
 #'    Chebana F., Martel B., Gosselin P., Giroux J.X., Ouarda T.B.M.J., 2013. 
 #'      A general and flexible methodology to define thresholds for heat health 
@@ -262,6 +264,7 @@ find.threshold <- function(indicators, episodes, u.grid, fixed.alphas = NULL,
 #'      International journal of biometeorology 57, 631-644.
 #'
 #' @examples
+#'   library(dlnm)
 #'   data(chicagoNMMAPS)
 #'   x <- chicagoNMMAPS$death
 #'   dates <- as.POSIXlt(chicagoNMMAPS$date)
@@ -284,6 +287,8 @@ find.threshold <- function(indicators, episodes, u.grid, fixed.alphas = NULL,
 #'   # Choose a result and predict
 #'   final <- tested[19,]
 #'   predict_alarms(indic, final[1:3], s = final[4], y = om)
+#'
+#' @export
 predict_alarms <- function(indicators, alpha, s, y = NA, r = 1)
 {
   if (!is.list(indicators)){
