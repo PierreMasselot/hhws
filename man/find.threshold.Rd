@@ -6,7 +6,8 @@
 \usage{
 find.threshold(indicators, episodes, u.grid, fixed.alphas = NULL,
   alpha.step = 0.1, decreasing.alphas = TRUE, same.alphas = TRUE,
-  order.result = NULL, order.decreasing = TRUE, keep.all = FALSE)
+  order.result = NULL, order.decreasing = TRUE, keep.all = FALSE,
+  r = NULL, progressBar = FALSE)
 }
 \arguments{
 \item{indicators}{List of matrices containing the lagged covariates to 
@@ -37,8 +38,8 @@ identical for each indicator. Note that trying different weightings
 (\code{same.alpha = FALSE}) can lead to significantly longer
 computation time.}
 
-\item{order.result}{Character of numeric value indicating a column used
-to order the returned table.}
+\item{order.result}{Character or numeric value indicating a column used
+to order the returned table. Can also be a vector.}
 
 \item{order.decreasing}{Logical. If TRUE (the default), ordering of the
 table is made by decreasing order to the column specified by
@@ -48,12 +49,19 @@ table is made by decreasing order to the column specified by
 both lower specificity and sensitivity than at least another combination
 are discarded from the results. Otherwise, all tested combinations
 are returned.}
+
+\item{r}{Positive integer. Number of consecutive values below threshold
+following an excess to end the episode. By default, take the attribute
+\code{r} in \code{episodes} or 1 if absent.}
+
+\item{progressBar}{Logical indicating if a progressBar is displayed during
+execution of the function. If TRUE, may greatly increase execution time.}
 }
 \value{
 A data.frame containing a subset (unless \code{keep.all = TRUE})  
    of weightings and thresholds. Weightings correspond to the columns
-   with a name containing "alpha" and threshold to names beginning with "threshold_".
-   In addition, several scores are given in each line:
+   with a name containing "alpha" and threshold to names beginning with 
+   "threshold". In addition, several scores are given in each line:
    \itemize{
      \item{Detected}{The number of indices in \code{episodes} detected by
        the combination.}
@@ -67,6 +75,8 @@ A data.frame containing a subset (unless \code{keep.all = TRUE})
        False_alarms / n.}
      \item{Episodes_found}{The number of episodes found, which takes account
        of entire episodes instead of only indices.}
+     \item{False_episodes}{The number of false episodes found, i.e. absent
+       from the provides \code{episodes}.}
    }
 }
 \description{
@@ -93,6 +103,7 @@ We consider a warning system as a couple indicator/threshold
    trade-off between specificity and sensitivity.
 }
 \examples{
+   library(dlnm)
    data(chicagoNMMAPS)
    x <- chicagoNMMAPS$death
    dates <- as.POSIXlt(chicagoNMMAPS$date)
@@ -111,6 +122,7 @@ We consider a warning system as a couple indicator/threshold
    indic[,3] <- c(NA, NA, chicagoNMMAPS$temp[1:(n-2)]) # lag 2
    # Evaluate different threshold/indicators based on these episodes
    find.threshold(indic, epis, u.grid = 20:35)
+
 }
 \references{
 Chebana F., Martel B., Gosselin P., Giroux J.X., Ouarda T.B.M.J., 2013. 

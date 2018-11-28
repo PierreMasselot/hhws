@@ -36,6 +36,8 @@
 #' @param r Positive integer. Number of consecutive values below threshold  
 #'   following an excess to end the episode. By default, take the attribute
 #'   \code{r} in \code{episodes} or 1 if absent.
+#' @param progressBar Logical indicating if a progressBar is displayed during
+#'    execution of the function. If TRUE, may greatly increase execution time.
 #'
 #' @details We consider a warning system as a couple indicator/threshold
 #'    used to launch alerts when forecasts of the indicator exceed the
@@ -113,7 +115,8 @@
 #' @export
 find.threshold <- function(indicators, episodes, u.grid, fixed.alphas = NULL, 
   alpha.step = .1, decreasing.alphas = TRUE, same.alphas = TRUE, 
-  order.result = NULL, order.decreasing = TRUE, keep.all = FALSE, r = NULL) 
+  order.result = NULL, order.decreasing = TRUE, keep.all = FALSE, r = NULL,
+  progressBar = FALSE) 
 {
   if (!is.list(indicators)){
     nind <- deparse(substitute(indicators))
@@ -176,7 +179,7 @@ find.threshold <- function(indicators, episodes, u.grid, fixed.alphas = NULL,
       sprintf("threshold_%s", inames), 
       "Detected", "Missed", "Sensitivity", "False_alarms", "Specificity",
       "Episodes_found", "False_episodes"))))
-  pb <- txtProgressBar(min = 0, max = na*nu, style = 3)
+  if (progressBar) pb <- txtProgressBar(min = 0, max = na*nu, style = 3)
   count <- 0
   for (i in 1:na){
     indi <- matrix(NA, n, p)
@@ -200,22 +203,38 @@ find.threshold <- function(indicators, episodes, u.grid, fixed.alphas = NULL,
       distToEpis <- abs(outer(found.ind, episodes[,1], "-"))
       outEpisodes <- apply(distToEpis, 1, function(x) !any(x <= 3))
       false.episodes <- c(1, cumsum(diff(found.ind[outEpisodes]) > r) + 1)
-      #Removing of cases for which both specificity and sensitivity are lower than at least another case (if keep.all == FALSE)  
-      dominated <- any(((result[1:count, "Sensitivity"] >= sensitivity & 
-        result[1:count, "Specificity"] >= specificity) & 
-        (result[1:count,"Sensitivity"] != sensitivity | 
-        result[1:count,"Specificity"] != specificity)))
-      if (keep.all || !dominated || count == 0){
+      #Removing of cases for which both specificity and sensitivity are lower than at least another case (if keep.all == FALSE)
+      if (count == 0 || keep.all){
         count <- count + 1
         result[count,] <- c(unlist(sapply(alpha.grid, "[", i, )), 
           total.ugrid[j,], sum(true.positives), sum(false.negatives), 
           sensitivity, sum(false.positives), specificity, 
-          length(episodes.found), length(unique(false.episodes)))        
-      }      
-      setTxtProgressBar(pb, (i-1)*nu + j)
+          length(episodes.found), length(unique(false.episodes)))
+      } else {
+        dominated <- any(((result[1:count, "Sensitivity"] >= sensitivity & 
+          result[1:count, "Specificity"] >= specificity) & 
+          (result[1:count,"Sensitivity"] != sensitivity | 
+          result[1:count,"Specificity"] != specificity)))
+        if (!dominated){
+          dominator <- ((result[1:count, "Sensitivity"] <= sensitivity & 
+            result[1:count, "Specificity"] <= specificity) & 
+            (result[1:count,"Sensitivity"] != sensitivity | 
+            result[1:count,"Specificity"] != specificity))
+          if (any(dominator)){
+            result <- result[-which(dominator),]
+            count <- count - sum(dominator)
+          }
+          count <- count + 1
+          result[count,] <- c(unlist(sapply(alpha.grid, "[", i, )), 
+            total.ugrid[j,], sum(true.positives), sum(false.negatives), 
+            sensitivity, sum(false.positives), specificity, 
+            length(episodes.found), length(unique(false.episodes)))  
+        }        
+      }  
+      if (progressBar) setTxtProgressBar(pb, (i-1)*nu + j)
     }
   }
-  close(pb)
+  if (progressBar) close(pb)
   result <- result[1:count,]
   if (!is.null(order.result)){
     ord <- do.call(order, c(result[,order.result, drop = F], 

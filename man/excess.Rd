@@ -44,6 +44,7 @@ Compute relative excesses from a baseline. Excesses are computed as:
   \deqn{excess = (x - expected) / expected * fact}
 }
 \examples{
+  library(dlnm)
   data(chicagoNMMAPS)
   x <- chicagoNMMAPS$death
   dates <- as.POSIXlt(chicagoNMMAPS$date)
@@ -53,6 +54,7 @@ Compute relative excesses from a baseline. Excesses are computed as:
 
   plot(dates, x)
   lines(dates, xrec, col = "red")
+
 }
 \references{
 Chebana F., Martel B., Gosselin P., Giroux J.X., Ouarda T.B.M.J., 2013. 
@@ -61,5 +63,5 @@ Chebana F., Martel B., Gosselin P., Giroux J.X., Ouarda T.B.M.J., 2013.
     International journal of biometeorology 57, 631-644.
 }
 \seealso{
-[baseline()] for computing expected values.
+\code{\link{baseline}} for computing expected values.
 }

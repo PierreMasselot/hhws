@@ -21,7 +21,7 @@
 #'   length as \code{x}.In addition, contains the attributes \code{baseline} and
 #'   \code{fact} to keep track of the computation.
 #'
-#' @seealso [baseline()] for computing expected values. 
+#' @seealso \code{\link{baseline}} for computing expected values. 
 #'
 #' @references
 #'   Chebana F., Martel B., Gosselin P., Giroux J.X., Ouarda T.B.M.J., 2013. 
@@ -30,6 +30,7 @@
 #'     International journal of biometeorology 57, 631-644. 
 #'
 #' @examples
+#'   library(dlnm)
 #'   data(chicagoNMMAPS)
 #'   x <- chicagoNMMAPS$death
 #'   dates <- as.POSIXlt(chicagoNMMAPS$date)
@@ -39,6 +40,8 @@
 #'
 #'   plot(dates, x)
 #'   lines(dates, xrec, col = "red")
+#'
+#' @export
 excess <- function(x, expected, fact = 100, ...)
 {
   if (missing(expected)) expected <- baseline(x, ...)
@@ -53,6 +56,8 @@ excess <- function(x, expected, fact = 100, ...)
 #'   original scale of \code{x}.
 #' @return \code{excess_inverse}: A numeric vector the same length as 
 #'   \code{excess}.
+#'
+#' @export
 excess_inverse <- function(excess, expected, fact)
 {  
   if (missing(expected)){

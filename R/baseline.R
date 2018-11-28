@@ -32,7 +32,7 @@
 #'
 #' @return A numeric vector the same length as \code{x}.
 #'
-#' @seealso [excess()] to compute excesses from the baseline.
+#' @seealso \code{\link{excess}} to compute excesses from the baseline.
 #'
 #' @references
 #'   Chebana F., Martel B., Gosselin P., Giroux J.X., Ouarda T.B.M.J., 2013. 
@@ -41,6 +41,7 @@
 #'     International journal of biometeorology 57, 631-644. 
 #'
 #' @examples
+#'   library(dlnm)
 #'   data(chicagoNMMAPS)
 #'   x <- chicagoNMMAPS$death
 #'   dates <- as.POSIXlt(chicagoNMMAPS$date)
@@ -53,9 +54,11 @@
 #'   plot(dates, x)
 #'   lines(dates, em2, col = "red")
 #'
-#'   em3 <- baseline(x, dates, nyear = 2)
+#'   em3 <- baseline(x, dates, nyear = 2, order = 15)
 #'   plot(dates, x)
 #'   lines(dates, em3, col = "red")
+#'
+#' @export
 baseline <- function(x, dates, nyear = Inf, center = FALSE, 
   smoothing.fun = c("ma", "spline", "none"), ...)
 {
@@ -81,7 +84,7 @@ baseline <- function(x, dates, nyear = Inf, center = FALSE,
   ysm <- switch(smoothing.fun,
     none = x,
     ma = forecast::ma(x, ...),
-    spline = smooth.spline(julian(dates, origin = dates[1]),x, ...)$y
+    spline = stats::smooth.spline(julian(dates, origin = dates[1]),x, ...)$y
   )
   if (nyear > diff(range(dates$year))){
     means <- aggregate(as.vector(ysm), by = list(doy = dates$yday), mean, 

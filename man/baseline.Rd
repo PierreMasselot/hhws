@@ -49,6 +49,7 @@ Computes a baseline of expected mortality (or other health issue)
   }
 }
 \examples{
+  library(dlnm)
   data(chicagoNMMAPS)
   x <- chicagoNMMAPS$death
   dates <- as.POSIXlt(chicagoNMMAPS$date)
@@ -61,9 +62,10 @@ Computes a baseline of expected mortality (or other health issue)
   plot(dates, x)
   lines(dates, em2, col = "red")
 
-  em3 <- baseline(x, dates, nyear = 2)
+  em3 <- baseline(x, dates, nyear = 2, order = 15)
   plot(dates, x)
   lines(dates, em3, col = "red")
+
 }
 \references{
 Chebana F., Martel B., Gosselin P., Giroux J.X., Ouarda T.B.M.J., 2013. 
@@ -72,5 +74,5 @@ Chebana F., Martel B., Gosselin P., Giroux J.X., Ouarda T.B.M.J., 2013.
     International journal of biometeorology 57, 631-644.
 }
 \seealso{
-[excess()] to compute excesses from the baseline.
+\code{\link{excess}} to compute excesses from the baseline.
 }

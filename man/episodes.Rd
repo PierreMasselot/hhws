@@ -41,14 +41,16 @@ A data.frame object containing the indices, values,
     if the day is one of the extremes (useful when \code{l > 0}).
 
     In addition, contains the attribute
-    \code{threshold} which gives he threshold for each value of \code{x}.  
-    Useful for plotting.
+    \code{threshold} which gives he threshold for each value of \code{x}  
+    for plotting, as well as \code{r}, \code{l} and \code{uc} that contains 
+    values of the corresponding parameters used to extract episodes.
 }
 \description{
 Extract episodes of extreme above a given threshold, possibly including 
   several days before and after the excess.
 }
 \examples{
+  library(dlnm)
   data(chicagoNMMAPS)
   x <- chicagoNMMAPS$death
   dates <- as.POSIXlt(chicagoNMMAPS$date)
@@ -61,6 +63,7 @@ Extract episodes of extreme above a given threshold, possibly including
   epis <- episodes(om, u = 40)
   # Show the corresponding dates
   dates[epis$t]
+
 }
 \references{
 Chebana F., Martel B., Gosselin P., Giroux J.X., Ouarda T.B.M.J., 2013. 

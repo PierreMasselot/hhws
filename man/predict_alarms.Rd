@@ -26,8 +26,8 @@ length as the number of rows of each matrix in \code{indicators}.}
 following an alarm to end the episode.}
 }
 \value{
-A data.frame object containing the indices, values, 
-    and episode number of all alarms found.
+A data.frame object containing the indices, episode number, and the 
+   values of both the response and indicators for all alarms found.
 }
 \description{
 Given predefined weights and thresholds, predict which of the indicators
@@ -38,10 +38,11 @@ Extracts the indices in \code{indicators} that correspond to an
    alarm according to the given weigths and thresholds. If \code{y} is
    given, the corresponding values of the response \emph{e.g.}
    over-mortality are also returned. In addition, episodes are formed
-   with consecutive alarms (or with alarms occurring with time differences)
+   by consecutive alarms (or by alarms occurring with time differences)
    lower or equal than \code{r}.
 }
 \examples{
+  library(dlnm)
   data(chicagoNMMAPS)
   x <- chicagoNMMAPS$death
   dates <- as.POSIXlt(chicagoNMMAPS$date)
@@ -64,10 +65,15 @@ Extracts the indices in \code{indicators} that correspond to an
   # Choose a result and predict
   final <- tested[19,]
   predict_alarms(indic, final[1:3], s = final[4], y = om)
+
 }
 \references{
 Chebana F., Martel B., Gosselin P., Giroux J.X., Ouarda T.B.M.J., 2013. 
      A general and flexible methodology to define thresholds for heat health 
      watch and warning systems, applied to the province of Quebec (Canada). 
      International journal of biometeorology 57, 631-644.
+}
+\seealso{
+\code{\link{predict_alarms}} to extract the detected alarms given
+   indicators and thresholds.
 }

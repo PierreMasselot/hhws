@@ -39,6 +39,7 @@
 #'      International journal of biometeorology 57, 631-644.
 #'
 #' @examples
+#'   library(dlnm)
 #'   data(chicagoNMMAPS)
 #'   x <- chicagoNMMAPS$death
 #'   dates <- as.POSIXlt(chicagoNMMAPS$date)
@@ -51,6 +52,8 @@
 #'   epis <- episodes(om, u = 40)
 #'   # Show the corresponding dates
 #'   dates[epis$t]
+#'
+#' @export
 episodes <- function(x, u, type = c("absolute","quantile"), trend = NULL, l = 0,
   r = 1, covariates = NULL, uc = NULL)
 {
