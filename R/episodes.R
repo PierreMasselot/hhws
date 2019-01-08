@@ -93,8 +93,14 @@ episodes <- function(x, u, type = c("absolute","quantile"), trend = NULL, l = 0,
     exts <- exts - mean(x, na.rm=T) + trend[inds]
     u <- u - mean(x, na.rm=T) + trend
   }
-  result <- data.frame(t = inds, episode = epis, value = exts, 
-    extreme = inds %in% ext.inds)
+  if (length(inds) == 0){
+    result <- data.frame(t = NULL, episode = NULL, value = NULL, 
+      extreme = NULL)
+    warning("No episode found")
+  } else {
+    result <- data.frame(t = inds, episode = epis, value = exts, 
+      extreme = inds %in% ext.inds)
+  }  
   attr(result, "threshold") <- rep_len(u, n)
   attr(result, "r") <- r
   attr(result, "l") <- l

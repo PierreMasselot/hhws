@@ -12,7 +12,8 @@
 #'    \code{\link{episodes}}.
 #' @param u.grid A list of vectors containing the grid of thresholds to be 
 #'    considered. The list must have the same number of elements than 
-#'    \code{indicators}.
+#'    \code{indicators}. If missing, the default is to use all percentiles
+#'    from 0.8 to 1.
 #' @param fixed.alphas A list of optional prefixed weightings for a subset of
 #'    indicators. When provided, must have the same length as \code{indicators}
 #'    and contain \code{NULL} for each non-fixed indicator.
@@ -135,6 +136,7 @@ find.threshold <- function(indicators, episodes, u.grid, fixed.alphas = NULL,
     stop("All indicator matrices must have the same row number")
   n <- unique(nvec)
   if (is.null(inames)) inames <- 1:p
+  if (missing(u.grid)) lapply(indicators, quantile, probs = seq(.8, 1, by = .01))
   if (!is.list(u.grid)) u.grid <- list(u.grid)
   u.grid <- rep_len(u.grid, p)
   if (!is.list(fixed.alphas)) fixed.alphas <- list(fixed.alphas)
