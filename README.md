@@ -20,12 +20,11 @@ See the help to details on how to use each function, *e.g.* `?baseline`.
 
 ## Installation
 
-1. Put the .tar.gz archive in any folder ;
-2. In R, install the package using the command:
+1. In R, install the package directly from github using the command:
 ```r
-> install.packages("path/to/package/hhws_1.0.tar.gz", type = "source")
+> install_github("PierreMasselot/hhws")
 ```
-3. The package can then be loaded as usual: `library(hhws)`.
+2. The package can then be loaded as usual: `library(hhws)`.
 
 ## Example
 
@@ -48,6 +47,7 @@ indic <- matrix(NA, nrow = n, ncol = 3)
 indic[,1] <- chicagoNMMAPS$temp  # lag 0
 indic[,2] <- c(NA, chicagoNMMAPS$temp[-n]) # Lag 1
 indic[,3] <- c(NA, NA, chicagoNMMAPS$temp[1:(n-2)]) # lag 2
+
 # Evaluate different threshold/indicators based on these episodes
 tested <- find.threshold(indic, epis, u.grid = 20:35)
 
