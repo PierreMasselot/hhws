@@ -6,8 +6,9 @@
 \usage{
 find.threshold(indicators, episodes, u.grid, fixed.alphas = NULL,
   alpha.step = 0.1, decreasing.alphas = TRUE, same.alphas = TRUE,
-  order.result = NULL, order.decreasing = TRUE, keep.all = FALSE,
-  r = NULL, progressBar = FALSE)
+  order.result = NULL, order.decreasing = TRUE, r = NULL,
+  trim = NULL, thinning = c("none", "days", "episodes"),
+  progressBar = FALSE)
 }
 \arguments{
 \item{indicators}{List of matrices containing the lagged covariates to 
@@ -21,7 +22,8 @@ corresponding episode index in the second column as returned by
 
 \item{u.grid}{A list of vectors containing the grid of thresholds to be 
 considered. The list must have the same number of elements than 
-\code{indicators}.}
+\code{indicators}. If missing, the default is to use all percentiles
+from 0.8 to 1.}
 
 \item{fixed.alphas}{A list of optional prefixed weightings for a subset of
 indicators. When provided, must have the same length as \code{indicators}
@@ -45,20 +47,27 @@ to order the returned table. Can also be a vector.}
 table is made by decreasing order to the column specified by
 \code{order.result}.}
 
-\item{keep.all}{Logical. If FALSE (the default), all combinations having 
-both lower specificity and sensitivity than at least another combination
-are discarded from the results. Otherwise, all tested combinations
-are returned.}
-
 \item{r}{Positive integer. Number of consecutive values below threshold
 following an excess to end the episode. By default, take the attribute
 \code{r} in \code{episodes} or 1 if absent.}
+
+\item{trim}{Positive integer. If not \code{NULL} (the default), the first
+\code{trim} results are returned by the function. Depends on the
+parameter \code{order.result}.}
+
+\item{thinning}{Character string indicating if the results should be thinned
+before returning. When \code{thinning = "none"} (the default), all tested
+combinations are returned. When \code{thinning = "days"}, combinations 
+for which there is at least another combinations such that specificity
+and sensivity are both higher, are removed from the returned results.
+When \code{thinning = "episodes"} the thinning is performed on the basis
+of episodes instead of days.}
 
 \item{progressBar}{Logical indicating if a progressBar is displayed during
 execution of the function. If TRUE, may greatly increase execution time.}
 }
 \value{
-A data.frame containing a subset (unless \code{keep.all = TRUE})  
+A data.frame containing a subset (unless \code{thinning = "none"})  
    of weightings and thresholds. Weightings correspond to the columns
    with a name containing "alpha" and threshold to names beginning with 
    "threshold". In addition, several scores are given in each line:
@@ -94,13 +103,15 @@ We consider a warning system as a couple indicator/threshold
    The indicator and threshold are determined by evaluating a large range
    of different weightings and threshold (given in \code{u.grid} and 
    \code{alpha.step}). For each combination of indicators/thresholds,
-   the function computes the indices that consist in alerts in the data
-   and compare them to the actual values given in \code{episodes}. The
-   function then selects a set of best candidates (unless  
-   \code{keep.all = TRUE}) based on sensitivity (the proportion of real
-   episodes detected) and specificity (the proportion of false episode
-   found). It is left to the user to choose the best combination by a 
-   trade-off between specificity and sensitivity.
+   the function computes the indices corresponding to alerts in the data
+   and compare them to the actual values given in \code{episodes}. If
+   \code{thinning != "none"}) the function then selects a subset of best 
+   candidates for which the number of detected days are maximum while the
+   number of false alarms is minimum. Note that if 
+   \code{thinning = "episodes"}, the subset is selected on the basis of
+   detected and false episodes instead of days. It is left to the user to 
+   choose the best combination by a trade-off between specificity and 
+   sensitivity.
 }
 \examples{
    library(dlnm)
