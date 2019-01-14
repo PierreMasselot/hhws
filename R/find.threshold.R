@@ -184,12 +184,13 @@ find.threshold <- function(indicators, episodes, u.grid, fixed.alphas = NULL,
   na <- max(na)
   total.ugrid <- expand.grid(u.grid)
   nu <- nrow(total.ugrid)
-  result <- as.data.frame(matrix(NA, nrow = na * nu, ncol = sum(pvec) + p + 7, 
+  nepis <- max(episodes[,2])
+  result <- as.data.frame(matrix(NA, nrow = na * nu, ncol = sum(pvec) + p + 8, 
     dimnames = list(NULL, c(unlist(mapply(function(x,y) 
       sprintf("%s_alpha%i", x, 1:y - 1), inames, pvec)), 
       sprintf("threshold_%s", inames), 
       "Detected", "Missed", "Sensitivity", "False_alarms", "Specificity",
-      "Episodes_found", "False_episodes"))))
+      "Episodes_found", "Episodes_sensitivity", "False_episodes"))))
   if (progressBar) pb <- txtProgressBar(min = 0, max = na*nu, style = 3)
   count <- 0
   for (i in 1:na){
@@ -248,7 +249,8 @@ find.threshold <- function(indicators, episodes, u.grid, fixed.alphas = NULL,
         result[count,] <- c(unlist(sapply(alpha.grid, "[", i, )), 
           total.ugrid[j,], sum(true.positives), sum(false.negatives), 
           sensitivity, sum(false.positives), specificity, 
-          length(episodes.found), length(unique(false.episodes)))  
+          length(episodes.found), length(episodes.found) / nepis, 
+          length(unique(false.episodes)))  
       }     
       if (progressBar) setTxtProgressBar(pb, (i-1)*nu + j)
     }
