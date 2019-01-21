@@ -52,8 +52,8 @@ following an excess to end the episode. By default, take the attribute
 \code{r} in \code{episodes} or 1 if absent.}
 
 \item{trim}{Positive integer. If not \code{NULL} (the default), the first
-\code{trim} results are returned by the function. Depends on the
-parameter \code{order.result}.}
+\code{trim} lines of the result are returned by the function. Depends on 
+the parameter \code{order.result}.}
 
 \item{thinning}{Character string indicating if the results should be thinned
 before returning. When \code{thinning = "none"} (the default), all tested
@@ -71,7 +71,6 @@ A data.frame containing a subset (unless \code{thinning = "none"})
    of weightings and thresholds. Weightings correspond to the columns
    with a name containing "alpha" and threshold to names beginning with 
    "threshold". In addition, several scores are given in each line:
-   \itemize{
      \item{Detected}{The number of indices in \code{episodes} detected by
        the combination.}
      \item{Missed}{The number of indices in \code{episodes} missed by
@@ -82,11 +81,11 @@ A data.frame containing a subset (unless \code{thinning = "none"})
        found by the combination which are not in \code{episodes}.}
      \item{Specificity}{The proportion of false alarms, \emph{i.e.} 
        False_alarms / n.}
-     \item{Episodes_found}{The number of episodes found, which takes account
-       of entire episodes instead of only indices.}
+     \item{Episodes_found}{The number of episodes found. An episode is
+       found when at least one of its days is found.}
+     \item{Episodes_sensitivity}{The proportion of episodes found.}
      \item{False_episodes}{The number of false episodes found, i.e. absent
        from the provides \code{episodes}.}
-   }
 }
 \description{
 Evaluate different combinations of threshold and indicator weightings
@@ -131,8 +130,10 @@ We consider a warning system as a couple indicator/threshold
    indic[,1] <- chicagoNMMAPS$temp  # lag 0
    indic[,2] <- c(NA, chicagoNMMAPS$temp[-n]) # Lag 1
    indic[,3] <- c(NA, NA, chicagoNMMAPS$temp[1:(n-2)]) # lag 2
+
    # Evaluate different threshold/indicators based on these episodes
-   find.threshold(indic, epis, u.grid = 20:35)
+   find.threshold(indic, epis, u.grid = 20:35, thinning = "episodes",
+     order.result = "Episodes_found")
 
 }
 \references{
@@ -140,12 +141,13 @@ Chebana F., Martel B., Gosselin P., Giroux J.X., Ouarda T.B.M.J., 2013.
      A general and flexible methodology to define thresholds for heat health 
      watch and warning systems, applied to the province of Quebec (Canada). 
      International journal of biometeorology 57, 631-644.
+
    Pascal M., Laaidi K., Ledrans M., Baffert E., Caserio-Schonemann C.,
      Le Tertre A., Manach J., Medina S., Rudant J., Empereur-Bissonnet P.,
      2006. France's heat health watch warning system. International journal
      of biometeorology 50, 144-153.
 }
 \seealso{
-[episodes()] for extracting episodes of extreme values and 
-   [predict_alarms()] for alarms prediction.
+\code{\link{episodes}} for extracting episodes of extreme values and 
+   \code{\link{predict_alarms}} for alarms prediction.
 }

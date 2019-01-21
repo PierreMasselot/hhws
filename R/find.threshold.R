@@ -70,7 +70,6 @@
 #'    of weightings and thresholds. Weightings correspond to the columns
 #'    with a name containing "alpha" and threshold to names beginning with 
 #'    "threshold". In addition, several scores are given in each line:
-#'    \itemize{
 #'      \item{Detected}{The number of indices in \code{episodes} detected by
 #'        the combination.}
 #'      \item{Missed}{The number of indices in \code{episodes} missed by
@@ -86,16 +85,16 @@
 #'      \item{Episodes_sensitivity}{The proportion of episodes found.}
 #'      \item{False_episodes}{The number of false episodes found, i.e. absent
 #'        from the provides \code{episodes}.}
-#'    }
 #'
-#' @seealso [episodes()] for extracting episodes of extreme values and 
-#'    [predict_alarms()] for alarms prediction.
+#' @seealso \code{\link{episodes}} for extracting episodes of extreme values and 
+#'    \code{\link{predict_alarms}} for alarms prediction.
 #'
 #' @references
 #'    Chebana F., Martel B., Gosselin P., Giroux J.X., Ouarda T.B.M.J., 2013. 
 #'      A general and flexible methodology to define thresholds for heat health 
 #'      watch and warning systems, applied to the province of Quebec (Canada). 
 #'      International journal of biometeorology 57, 631-644.
+#'
 #'    Pascal M., Laaidi K., Ledrans M., Baffert E., Caserio-Schonemann C.,
 #'      Le Tertre A., Manach J., Medina S., Rudant J., Empereur-Bissonnet P.,
 #'      2006. France's heat health watch warning system. International journal
@@ -119,6 +118,7 @@
 #'    indic[,1] <- chicagoNMMAPS$temp  # lag 0
 #'    indic[,2] <- c(NA, chicagoNMMAPS$temp[-n]) # Lag 1
 #'    indic[,3] <- c(NA, NA, chicagoNMMAPS$temp[1:(n-2)]) # lag 2
+#'
 #'    # Evaluate different threshold/indicators based on these episodes
 #'    find.threshold(indic, epis, u.grid = 20:35, thinning = "episodes",
 #'      order.result = "Episodes_found")
@@ -324,6 +324,7 @@ find.threshold <- function(indicators, episodes, u.grid, fixed.alphas = NULL,
 #'   indic[,1] <- chicagoNMMAPS$temp  # lag 0
 #'   indic[,2] <- c(NA, chicagoNMMAPS$temp[-n]) # Lag 1
 #'   indic[,3] <- c(NA, NA, chicagoNMMAPS$temp[1:(n-2)]) # lag 2
+#'
 #'   # Evaluate different threshold/indicators based on these episodes
 #'   tested <- find.threshold(indic, epis, u.grid = 20:35, thinning = "episodes",
 #'      order.result = "Episodes_found")
