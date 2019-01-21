@@ -49,10 +49,10 @@ indic[,2] <- c(NA, chicagoNMMAPS$temp[-n]) # Lag 1
 indic[,3] <- c(NA, NA, chicagoNMMAPS$temp[1:(n-2)]) # lag 2
 
 # Evaluate different threshold/indicators based on these episodes
-tested <- find.threshold(indic, epis, u.grid = 20:35)
+tested <- find.threshold(indic, epis, u.grid = 20:35, thinning = "episodes", order.result = "Episodes_found")
 
 # Choose a result and predict
-final <- tested[19,]
+final <- tested[1,]
 predict_alarms(indic, final[1:3], s = final[4], y = om)
 
 ```

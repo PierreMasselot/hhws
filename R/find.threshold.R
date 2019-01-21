@@ -330,7 +330,7 @@ find.threshold <- function(indicators, episodes, u.grid, fixed.alphas = NULL,
 #'      order.result = "Episodes_found")
 #'
 #'   # Choose a result and predict
-#'   final <- tested[19,]
+#'   final <- tested[1,]
 #'   predict_alarms(indic, final[1:3], s = final[4], y = om)
 #'
 #' @export
