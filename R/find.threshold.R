@@ -81,8 +81,9 @@
 #'        found by the combination which are not in \code{episodes}.}
 #'      \item{Specificity}{The proportion of false alarms, \emph{i.e.} 
 #'        False_alarms / n.}
-#'      \item{Episodes_found}{The number of episodes found, which takes account
-#'        of entire episodes instead of only indices.}
+#'      \item{Episodes_found}{The number of episodes found. An episode is
+#'        found when at least one of its days is found.}
+#'      \item{Episodes_sensitivity}{The proportion of episodes found.}
 #'      \item{False_episodes}{The number of false episodes found, i.e. absent
 #'        from the provides \code{episodes}.}
 #'    }
@@ -161,20 +162,20 @@ find.threshold <- function(indicators, episodes, u.grid, fixed.alphas = NULL,
   } 
   # Grid of alphas to test if necessary
   alpha.grid <- fixed.alphas
-  nulls <- sapply(fixed.alphas,is.null)
+  nulls <- sapply(fixed.alphas, is.null)
   if (any(nulls)){
     for (i in which(nulls)){
       ag <- expand.grid(rep(list(seq(0,1,alpha.step)), pvec[i]))
-      ag <- ag[apply(ag, 1, sum) == 1,]
+      ag <- ag[apply(ag, 1, sum) == 1,, drop = F]
       if (decreasing.alphas) ag <- ag[apply(ag, 1, 
-        function(x) all(diff(as.numeric(x))<=0)),]
+        function(x) all(diff(as.numeric(x))<=0)),, drop = F]
       alpha.grid[[i]] <- ag
     }
     na <- sapply(alpha.grid[nulls], nrow)
     if (!same.alphas || (length(unique(pvec[nulls])) > 1)) {
       igrid <- expand.grid(lapply(na[nulls], function(x) 1:x))
       for (i in 1:sum(nulls)){
-        alpha.grid[[i]] <- alpha.grid[[which(nulls)[i]]][igrid[,i],]
+        alpha.grid[[i]] <- alpha.grid[[which(nulls)[i]]][igrid[,i],,drop = F]
       }
       na <- sapply(alpha.grid[nulls], nrow)
     }
