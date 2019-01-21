@@ -297,9 +297,6 @@ find.threshold <- function(indicators, episodes, u.grid, fixed.alphas = NULL,
 #' @return A data.frame object containing the indices, episode number, and the 
 #'    values of both the response and indicators for all alarms found.
 #'
-#' @seealso \code{\link{predict_alarms}} to extract the detected alarms given
-#'    indicators and thresholds.
-#'
 #' @references
 #'    Chebana F., Martel B., Gosselin P., Giroux J.X., Ouarda T.B.M.J., 2013. 
 #'      A general and flexible methodology to define thresholds for heat health 

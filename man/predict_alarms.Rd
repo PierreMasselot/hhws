@@ -75,7 +75,3 @@ Chebana F., Martel B., Gosselin P., Giroux J.X., Ouarda T.B.M.J., 2013.
      watch and warning systems, applied to the province of Quebec (Canada). 
      International journal of biometeorology 57, 631-644.
 }
-\seealso{
-\code{\link{predict_alarms}} to extract the detected alarms given
-   indicators and thresholds.
-}
